@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>El próximo del último — Cuenta atrás para la gira 2026</title>
+<meta name="description" content="Cuenta atrás en directo para los próximos conciertos de El Último de la Fila — Gira 2026.">
+
+<!-- Open Graph / Twitter -->
+<meta property="og:title" content="El próximo del último">
+<meta property="og:description" content="Cuenta atrás para los conciertos de El Último de la Fila.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://elproximodelultimo.es/">
+<meta property="og:image" content="https://elproximodelultimo.es/assets/hero.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="assets/favicon.jpg">
+<link rel="apple-touch-icon" href="assets/favicon.jpg">
+
+<style>
+  :root {
+    --bg: #000;
+    --fg: #fff;
+    --muted: rgba(255, 255, 255, 0.55);
+    --dim: rgba(255, 255, 255, 0.3);
+    --line: rgba(255, 255, 255, 0.08);
+    --gold: #d4a017;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  body {
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .hero {
+    position: relative;
+    height: 38vh;
+    min-height: 240px;
+    max-height: 360px;
+    background-image:
+      linear-gradient(180deg, rgba(0, 0, 0, 0) 35%, rgba(0, 0, 0, 1) 100%),
+      url('assets/hero.jpg');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .rotulo {
+    position: absolute;
+    left: 50%;
+    top: max(env(safe-area-inset-top), 18px);
+    transform: translateX(-50%);
+    height: 32px;
+    width: auto;
+    filter: brightness(0) invert(1);
+  }
+
+  .countdown-block {
+    margin-top: -28px;
+    padding: 0 22px 18px;
+    background: linear-gradient(180deg, transparent 0%, var(--bg) 30%, var(--bg) 100%);
+    position: relative;
+    z-index: 2;
+  }
+
+  .label {
+    font-size: 9px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .clock {
+    display: flex;
+    gap: 4px;
+    align-items: baseline;
+  }
+
+  .clock .unit {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .clock .num {
+    font-size: clamp(36px, 12vw, 56px);
+    font-weight: 200;
+    line-height: 1;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -2px;
+  }
+
+  .clock .lbl {
+    font-size: 8px;
+    letter-spacing: 2.5px;
+    color: var(--muted);
+    margin-top: 8px;
+    text-transform: uppercase;
+  }
+
+  .clock .sep {
+    color: var(--dim);
+    font-size: clamp(28px, 9vw, 42px);
+    font-weight: 100;
+    align-self: flex-start;
+    margin-top: 4px;
+  }
+
+  .next-info {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+
+  .next-city {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .next-venue {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .next-date {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+    text-transform: capitalize;
+  }
+
+  .tour {
+    padding: 18px 22px 28px;
+    border-top: 1px solid var(--line);
+  }
+
+  .tour-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 9px;
+    letter-spacing: 4px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .tour-head .count { color: var(--gold); }
+
+  .row {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    gap: 10px;
+    padding: 10px 0;
+    align-items: center;
+    font-size: 11px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .row:last-child { border-bottom: none; }
+
+  .row .date {
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .row .city {
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .row .venue {
+    display: block;
+    font-size: 9px;
+    color: var(--dim);
+    font-weight: 400;
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+  }
+
+  .row .away {
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .row.past { opacity: 0.35; }
+
+  .row.past .away::before {
+    content: '✓';
+    color: var(--gold);
+  }
+
+  .row.now {
+    background: rgba(212, 160, 23, 0.08);
+    border-left: 2px solid var(--gold);
+    padding-left: 8px;
+    margin-left: -10px;
+    border-radius: 2px;
+  }
+
+  .row.now .away {
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 22px 22px 30px;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.5px;
+  }
+
+  .footer a {
+    color: var(--muted);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .live-tour-over {
+    text-align: center;
+    padding: 40px 22px;
+    color: var(--muted);
+  }
+
+  .live-tour-over h2 {
+    font-size: 20px;
+    margin-bottom: 8px;
+    color: var(--fg);
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <img class="rotulo" src="assets/rotulo.png" alt="El Último de la Fila">
+</header>
+
+<section class="countdown-block" id="countdown-block">
+  <div class="label" id="cd-label">Próximo concierto en</div>
+  <div class="clock" id="clock">
+    <div class="unit"><div class="num" id="d">--</div><div class="lbl">Días</div></div>
+    <div class="sep">:</div>
+    <div class="unit"><div class="num" id="h">--</div><div class="lbl">Hrs</div></div>
+    <div class="sep">:</div>
+    <div class="unit"><div class="num" id="m">--</div><div class="lbl">Min</div></div>
+    <div class="sep">:</div>
+    <div class="unit"><div class="num" id="s">--</div><div class="lbl">Seg</div></div>
+  </div>
+  <div class="next-info">
+    <div class="next-city" id="next-city">—</div>
+    <div class="next-venue" id="next-venue">—</div>
+    <div class="next-date" id="next-date">—</div>
+  </div>
+</section>
+
+<section class="tour">
+  <div class="tour-head">
+    <span>Gira 2026</span>
+    <span class="count" id="tour-count">—</span>
+  </div>
+  <div id="tour-list"></div>
+</section>
+
+<footer class="footer">
+  Cuenta atrás no oficial · datos de
+  <a href="https://elultimodelafila.com/conciertos/" target="_blank" rel="noopener">elultimodelafila.com</a>
+</footer>
+
+<script>
+(function () {
+  // Concert data — date is the show start in Madrid local time.
+  // No official start times published; defaulting to 21:30 local (typical Spain show).
+  const TZ = 'Europe/Madrid';
+  const DEFAULT_HOUR = 21;
+  const DEFAULT_MINUTE = 30;
+
+  const concerts = [
+    { date: '2026-04-25', city: 'Fuengirola',             venue: 'Marenostrum Fuengirola' },
+    { date: '2026-05-03', city: 'Barcelona',              venue: 'Estadi Olímpic Lluís Companys' },
+    { date: '2026-05-07', city: 'Barcelona',              venue: 'Estadi Olímpic Lluís Companys' },
+    { date: '2026-05-16', city: 'Roquetas de Mar',        venue: 'Estadio Municipal Antonio Peroles' },
+    { date: '2026-05-23', city: 'Madrid',                 venue: 'Riyadh Air Metropolitano' },
+    { date: '2026-05-30', city: 'Bilbao',                 venue: 'Bizkaia Arena BEC!' },
+    { date: '2026-06-05', city: 'Bilbao',                 venue: 'Bizkaia Arena BEC!' },
+    { date: '2026-06-13', city: 'Santiago de Compostela', venue: 'Auditorio Monte do Gozo' },
+    { date: '2026-06-20', city: 'Avilés',                 venue: 'Exterior del Pabellón de la Magdalena' },
+    { date: '2026-06-27', city: 'Sevilla',                venue: 'Estadio de la Cartuja' },
+    { date: '2026-07-04', city: 'Valencia',               venue: 'Estadio Ciutat de València' },
+    { date: '2026-07-09', city: 'Valencia',               venue: 'Estadio Ciutat de València' }
+  ];
+
+  // Madrid is UTC+1 in winter, UTC+2 in summer. All concerts fall in CEST (Apr-Jul).
+  // Convert local Madrid 21:30 → UTC: subtract 2h. Hardcoded since DST change is Mar 29 2026.
+  function toUtcMs(dateStr) {
+    const [y, mo, d] = dateStr.split('-').map(Number);
+    return Date.UTC(y, mo - 1, d, DEFAULT_HOUR - 2, DEFAULT_MINUTE);
+  }
+
+  const items = concerts.map(c => ({ ...c, ts: toUtcMs(c.date) }));
+
+  const dateFmt = new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    timeZone: TZ
+  });
+  const shortDateFmt = new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric', month: 'short', timeZone: TZ
+  });
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function findNext(now) {
+    return items.find(c => c.ts > now);
+  }
+
+  function renderClock(target, now) {
+    const total = Math.max(0, target - now);
+    const days = Math.floor(total / 86400000);
+    const hrs  = Math.floor((total % 86400000) / 3600000);
+    const min  = Math.floor((total % 3600000) / 60000);
+    const sec  = Math.floor((total % 60000) / 1000);
+    document.getElementById('d').textContent = pad(days);
+    document.getElementById('h').textContent = pad(hrs);
+    document.getElementById('m').textContent = pad(min);
+    document.getElementById('s').textContent = pad(sec);
+  }
+
+  function relDays(target, now) {
+    const diff = target - now;
+    if (diff < 0) return null;
+    const days = Math.floor(diff / 86400000);
+    const hrs  = Math.floor((diff % 86400000) / 3600000);
+    if (days === 0) return hrs + 'h';
+    if (days === 1) return 'mañana';
+    return days + 'd';
+  }
+
+  function renderTourList(now) {
+    const list = document.getElementById('tour-list');
+    const next = findNext(now);
+    list.innerHTML = items.map(c => {
+      const isPast = c.ts <= now;
+      const isNext = next && c.ts === next.ts;
+      const cls = isPast ? 'row past' : (isNext ? 'row now' : 'row');
+      const away = isPast ? '' : (relDays(c.ts, now) || '');
+      return `
+        <div class="${cls}">
+          <span class="date">${shortDateFmt.format(c.ts).replace('.', '')}</span>
+          <span>
+            <span class="city">${c.city}</span>
+            <span class="venue">${c.venue}</span>
+          </span>
+          <span class="away">${away}</span>
+        </div>
+      `;
+    }).join('');
+
+    const remaining = items.filter(c => c.ts > now).length;
+    document.getElementById('tour-count').textContent =
+      remaining === 0 ? 'Gira finalizada' :
+      remaining === 1 ? '1 fecha restante' :
+      remaining + ' fechas restantes';
+  }
+
+  function renderNext(now) {
+    const next = findNext(now);
+    const block = document.getElementById('countdown-block');
+    if (!next) {
+      block.innerHTML = `
+        <div class="live-tour-over">
+          <h2>Gira finalizada</h2>
+          <p>Hasta la próxima.</p>
+        </div>
+      `;
+      return null;
+    }
+    document.getElementById('next-city').textContent = next.city.toUpperCase();
+    document.getElementById('next-venue').textContent = next.venue;
+    document.getElementById('next-date').textContent = dateFmt.format(next.ts);
+    return next.ts;
+  }
+
+  let target;
+  function tick() {
+    const now = Date.now();
+    if (target == null || target <= now) {
+      target = renderNext(now);
+      renderTourList(now);
+    } else {
+      renderClock(target, now);
+    }
+  }
+
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+
+</body>
+</html>
