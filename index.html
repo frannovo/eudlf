@@ -529,6 +529,194 @@
     50%      { transform: scale(1.25); }
   }
 
+  /* === Past-event panel === */
+  .event-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    pointer-events: none;
+  }
+  .event-panel.show {
+    pointer-events: auto;
+  }
+  .event-panel-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    transition: opacity 0.3s;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+  .event-panel.show .event-panel-backdrop {
+    opacity: 1;
+  }
+  .event-panel-content {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 460px;
+    background: #0a0a0a;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    transform: translateX(100%);
+    transition: transform 0.3s ease-out;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: max(env(safe-area-inset-bottom), 30px);
+  }
+  .event-panel.show .event-panel-content {
+    transform: translateX(0);
+  }
+  .event-panel-close {
+    position: sticky;
+    top: 12px;
+    margin-left: auto;
+    margin-right: 12px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: var(--fg);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 22px;
+    cursor: pointer;
+    z-index: 1;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  .event-panel-header {
+    padding: 0 22px 18px;
+    margin-top: -36px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .event-panel-meta {
+    font-size: 9px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .event-panel-city {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    margin: 0 0 4px;
+    line-height: 1;
+  }
+  .event-panel-venue {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .attended-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid rgba(212, 160, 23, 0.4);
+    color: var(--gold);
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+  }
+  .attended-toggle:hover {
+    background: rgba(212, 160, 23, 0.1);
+  }
+  .attended-toggle.active {
+    background: var(--gold);
+    color: #000;
+  }
+  .attended-toggle .attended-icon {
+    font-size: 11px;
+  }
+
+  .event-panel-body {
+    padding: 18px 22px 36px;
+  }
+  .articles-head {
+    font-size: 9px;
+    letter-spacing: 4px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .article-card {
+    display: block;
+    padding: 14px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .article-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(212, 160, 23, 0.4);
+  }
+  .article-source {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--gold);
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .article-title {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 8px;
+    color: var(--fg);
+  }
+  .article-summary {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .article-date {
+    font-size: 9px;
+    color: var(--dim);
+    margin-top: 8px;
+    letter-spacing: 0.5px;
+  }
+  .panel-empty {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    padding: 30px 0;
+    font-style: italic;
+  }
+
+  /* Tour list: attended marker on past rows */
+  .row.past.attended .city::after {
+    content: ' ★';
+    color: var(--gold);
+    font-size: 10px;
+    -webkit-text-stroke: 0;
+  }
+  .row.past.attended {
+    opacity: 0.55;
+  }
+
   .live-tour-over {
     text-align: center;
     padding: 40px 22px;
@@ -588,6 +776,23 @@
   </div>
   <div id="tour-list"></div>
 </section>
+
+<aside class="event-panel" id="event-panel" aria-hidden="true">
+  <div class="event-panel-backdrop" id="event-panel-backdrop"></div>
+  <div class="event-panel-content" role="dialog" aria-labelledby="event-panel-city">
+    <button type="button" class="event-panel-close" id="event-panel-close" aria-label="Cerrar panel">×</button>
+    <header class="event-panel-header">
+      <div class="event-panel-meta" id="event-panel-meta">—</div>
+      <h2 class="event-panel-city" id="event-panel-city">—</h2>
+      <div class="event-panel-venue" id="event-panel-venue">—</div>
+      <button type="button" class="attended-toggle" id="attended-toggle">
+        <span class="attended-icon">★</span>
+        <span class="attended-label">Yo estuve aquí</span>
+      </button>
+    </header>
+    <div class="event-panel-body" id="event-panel-body"></div>
+  </div>
+</aside>
 
 <div class="answer-banner" id="answer-banner" role="status" aria-live="polite">
   <div>
@@ -663,14 +868,99 @@
   function pad(n) { return String(n).padStart(2, '0'); }
 
   // === Constants ===
-  const STORAGE_KEY = 'eudlf.selectedDate';
-  const HASH_DATE_RE = /^#(\d{4}-\d{2}-\d{2})$/;
-  const HASH_SLUG_RE = /^#([a-z][a-z0-9-]*)$/;
+  const STORAGE_KEY   = 'eudlf.selectedDate';
+  const ATTENDED_KEY  = 'eudlf.attended';
+  const HASH_DATE_RE  = /^#(\d{4}-\d{2}-\d{2})$/;
+  const HASH_SLUG_RE  = /^#([a-z][a-z0-9-]*)$/;
   const SHOW_DURATION_MS = 3 * 3600 * 1000;   // 3h live window after start
   const RECAP_WINDOW_MS  = 24 * 3600 * 1000;  // "ayer" card window
   const SOON_MS     = 2 * 3600 * 1000;
   const TOMORROW_MS = 24 * 3600 * 1000;
   const WEEK_MS     = 7 * 86400 * 1000;
+
+  // === Past events: curated articles per concert date ===
+  const PAST_EVENTS = {
+    '2026-04-25': {
+      articles: [
+        { titulo: 'El Último de la Fila vuelve a los escenarios en Fuengirola',
+          fecha: '2026-04-30',
+          link: 'https://www.axarquiaplus.es/el-ultimo-de-la-fila-vuelve-a-los-escenarios-en-fuengirola/',
+          sumario: 'Resumen del hito histórico en Marenostrum ante 18.500 personas. Destaca la rapidez con la que se agotaron las entradas (un año antes) y la intensidad de las dos horas de música ininterrumpida.' },
+        { titulo: '[Crónica] El inicio de gira de El Último de la Fila nos lleva directos a una juventud nunca perdida',
+          fecha: '2026-04-25',
+          link: 'https://www.alquimiasonora.com/2026/04/cronica-el-inicio-de-gira-de-el-ultimo.html',
+          sumario: 'Crónica detallada que describe el concierto como una "grieta en el tiempo". Analiza el uso de visuales retro, el repaso a la etapa de Los Burros y la impecable conexión emocional entre Manolo, Quimi y su público.' },
+        { titulo: 'El Último de la Fila arranca su gira en Fuengirola: nunca se fueron, siguen muy vivos',
+          fecha: '2026-04-26',
+          link: 'https://los40.com/2026/04/26/el-ultimo-de-la-fila-arranca-su-gira-en-fuengirola-nunca-se-fueron-siguen-muy-vivos-en-nuestros-corazones/',
+          sumario: 'Noticia de la emisora oficial destacando el regreso tras 30 años. Resalta la vigencia del sonido del grupo y la importancia generacional del evento para el pop-rock español.' },
+        { titulo: 'El Último de la Fila revive la llama de la nostalgia en Fuengirola con himnos nacionales',
+          fecha: '2026-04-26',
+          link: 'https://www.malagahoy.es/ocio/ultimo-fila-vuela-nostalgia-fuengirola_0_2006593523.html',
+          sumario: 'Relato de la noche desde una perspectiva local, mencionando la amenaza de lluvia que finalmente respetó el show y el ambiente festivo que inundó la ciudad de Fuengirola.' },
+        { titulo: 'El Último de la Fila inicia su gira de reunión en Fuengirola: setlist y vídeos',
+          fecha: '2026-04-26',
+          link: 'https://mariskalrock.com/actualidad/el-ultimo-de-la-fila-inicia-su-gira-de-reunion-en-fuengirola-malaga-setlist-y-videos/',
+          sumario: 'Enfoque técnico y musical que incluye el listado completo de canciones (setlist) y destaca la potencia de la banda de acompañamiento, incluyendo a músicos como Sara García.' },
+        { titulo: 'El Último de la Fila resucita su magia intacta 30 años después en Fuengirola',
+          fecha: '2026-04-26',
+          link: 'https://elpais.com/cultura/musica/2026-04-26/el-ultimo-de-la-fila-resucita-su-magia-intacta-30-anos-despues-en-fuengirola.html',
+          sumario: 'Manolo García y Quimi Portet firman un regreso apoteósico en el Marenostrum ante un público entregado a la nostalgia y a un repertorio que es historia viva del pop español.' },
+        { titulo: 'La noche en que el tiempo se detuvo: El Último de la Fila arrasa en su vuelta a los escenarios',
+          fecha: '2026-04-26',
+          link: 'https://www.elconfidencial.com/cultura/2026-04-26/ultimo-de-la-fila-concierto-fuengirola-cronica_3892104/',
+          sumario: 'El esperado reencuentro de la mítica banda catalana arranca su gira en Málaga. Crónica de un triunfo rotundo donde demostraron que la química escénica y sus grandes himnos no han envejecido ni un solo día.' },
+        { titulo: 'El Último de la Fila: el triunfo de la memoria en un Marenostrum a reventar',
+          fecha: '2026-04-26',
+          link: 'https://www.elmundo.es/cultura/musica/2026/04/26/cronica-concierto-ultimo-de-la-fila-fuengirola.html',
+          sumario: 'Con las entradas agotadas desde hace un año, el dúo arrancó su gira española repasando clásicos incombustibles ante más de 18.000 fieles.' },
+        { titulo: 'El Último de la Fila rubrica en Fuengirola un regreso histórico para la música nacional',
+          fecha: '2026-04-26',
+          link: 'https://www.abc.es/cultura/musica/el-ultimo-de-la-fila-concierto-fuengirola-regreso-historico-20260426-nt.html',
+          sumario: 'Málaga acogió el pistoletazo de salida de la esperada reunión de Quimi Portet y Manolo García. Dos horas de comunión total, guitarras afiladas y un público intergeneracional que coreó cada estrofa.' }
+      ]
+    }
+  };
+
+  // === Source label map (URL → readable name) ===
+  const SOURCE_NAMES = {
+    'elpais.com':         'El País',
+    'elmundo.es':         'El Mundo',
+    'abc.es':             'ABC',
+    'elconfidencial.com': 'El Confidencial',
+    'malagahoy.es':       'Málaga Hoy',
+    'los40.com':          'Los 40',
+    'mariskalrock.com':   'Mariskal Rock',
+    'alquimiasonora.com': 'Alquimia Sonora',
+    'axarquiaplus.es':    'Axarquía Plus'
+  };
+  function sourceLabel(url) {
+    try {
+      const host = new URL(url).hostname.replace(/^www\./, '');
+      if (SOURCE_NAMES[host]) return SOURCE_NAMES[host];
+      const parts = host.split('.');
+      const root = parts[parts.length - 2] || host;
+      return root.charAt(0).toUpperCase() + root.slice(1);
+    } catch (e) {
+      return 'Fuente';
+    }
+  }
+
+  // === Attended (Yo estuve aquí) state ===
+  function attendedDates() {
+    try { return JSON.parse(localStorage.getItem(ATTENDED_KEY) || '[]'); }
+    catch (e) { return []; }
+  }
+  function hasAttended(date) {
+    return attendedDates().indexOf(date) !== -1;
+  }
+  function setAttended(date, attended) {
+    const list = attendedDates();
+    const idx = list.indexOf(date);
+    if (attended && idx === -1) list.push(date);
+    else if (!attended && idx !== -1) list.splice(idx, 1);
+    try { localStorage.setItem(ATTENDED_KEY, JSON.stringify(list)); } catch (e) {}
+  }
 
   // === City slugs ===
   function slugify(s) {
@@ -839,23 +1129,26 @@
   function renderTourList(now) {
     const list = document.getElementById('tour-list');
     const next = findNext(now);
+    const attended = attendedDates();
     list.innerHTML = items.map(function (c) {
       const isPast = c.ts + SHOW_DURATION_MS <= now;
       const isLive = !isPast && c.ts <= now;
       const isNext = next && c.ts === next.ts && !isLive;
       const isSelected = selectedDate === c.date;
+      const wasAttended = isPast && attended.indexOf(c.date) !== -1;
       const cls = ['row'];
       if (isPast) cls.push('past');
       else if (isLive) cls.push('live');
       else if (isNext) cls.push('now');
       if (isSelected) cls.push('selected');
+      if (wasAttended) cls.push('attended');
       let away;
       if (isLive) away = 'EN VIVO';
       else if (isPast) away = '';
       else away = relDays(c.ts, now) || '';
-      const tabAttr = isPast ? '' : ' tabindex="0" role="button"';
+      // Past rows are now tappable (open the press panel)
       return ''
-        + '<div class="' + cls.join(' ') + '" data-date="' + c.date + '"' + tabAttr + '>'
+        + '<div class="' + cls.join(' ') + '" data-date="' + c.date + '" tabindex="0" role="button">'
         +   '<span class="date">' + shortDateFmt.format(c.ts).replace('.', '') + '</span>'
         +   '<span>'
         +     '<span class="city">' + c.city + '</span>'
@@ -962,20 +1255,27 @@
     tick();
   }
 
-  document.getElementById('tour-list').addEventListener('click', function (e) {
-    const row = e.target.closest('.row');
-    if (!row || row.classList.contains('past')) return;
+  function activateRow(row) {
+    if (!row) return;
     const date = row.getAttribute('data-date');
-    if (date) selectConcert(date);
+    if (!date) return;
+    if (row.classList.contains('past') || row.classList.contains('live')) {
+      openPanel(date);
+    } else {
+      selectConcert(date);
+    }
+  }
+
+  document.getElementById('tour-list').addEventListener('click', function (e) {
+    activateRow(e.target.closest('.row'));
   });
 
   document.getElementById('tour-list').addEventListener('keydown', function (e) {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const row = e.target.closest('.row');
-    if (!row || row.classList.contains('past')) return;
+    if (!row) return;
     e.preventDefault();
-    const date = row.getAttribute('data-date');
-    if (date) selectConcert(date);
+    activateRow(row);
   });
 
   document.getElementById('next-toggle').addEventListener('click', function () {
@@ -999,6 +1299,101 @@
     }
     lastKey = null;
     tick();
+  });
+
+  // === Past-event panel ===
+  let panelDate = null;
+  const panelEl       = document.getElementById('event-panel');
+  const panelMeta     = document.getElementById('event-panel-meta');
+  const panelCity     = document.getElementById('event-panel-city');
+  const panelVenue    = document.getElementById('event-panel-venue');
+  const panelBody     = document.getElementById('event-panel-body');
+  const attendBtn     = document.getElementById('attended-toggle');
+  const attendLabel   = attendBtn.querySelector('.attended-label');
+
+  const longDateFmt = new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    timeZone: TZ
+  });
+  const shortPubFmt = new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric', month: 'short', year: 'numeric'
+  });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (ch) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[ch];
+    });
+  }
+
+  function renderPanelArticles(date) {
+    const data = PAST_EVENTS[date];
+    const articles = (data && data.articles) || [];
+    if (!articles.length) {
+      panelBody.innerHTML = '<div class="panel-empty">Aún no hay artículos para este concierto.</div>';
+      return;
+    }
+    const sorted = articles.slice().sort(function (a, b) {
+      return (a.fecha < b.fecha) ? 1 : (a.fecha > b.fecha) ? -1 : 0;
+    });
+    const cards = sorted.map(function (a) {
+      const pubDate = a.fecha
+        ? shortPubFmt.format(new Date(a.fecha + 'T12:00:00'))
+        : '';
+      return ''
+        + '<a class="article-card" href="' + escapeHtml(a.link) + '" target="_blank" rel="noopener">'
+        +   '<div class="article-source">' + escapeHtml(sourceLabel(a.link)) + '</div>'
+        +   '<div class="article-title">' + escapeHtml(a.titulo) + '</div>'
+        +   '<div class="article-summary">' + escapeHtml(a.sumario) + '</div>'
+        +   '<div class="article-date">' + escapeHtml(pubDate) + '</div>'
+        + '</a>';
+    }).join('');
+    const head = ''
+      + '<div class="articles-head">'
+      +   '<span>Prensa</span>'
+      +   '<span>' + sorted.length + (sorted.length === 1 ? ' artículo' : ' artículos') + '</span>'
+      + '</div>';
+    panelBody.innerHTML = head + cards;
+  }
+
+  function syncAttendedButton(date) {
+    const on = hasAttended(date);
+    attendBtn.classList.toggle('active', on);
+    attendLabel.textContent = on ? 'Estuviste aquí' : 'Yo estuve aquí';
+  }
+
+  function openPanel(date) {
+    const c = items.find(function (x) { return x.date === date; });
+    if (!c) return;
+    panelDate = date;
+    panelMeta.textContent = longDateFmt.format(c.ts);
+    panelCity.textContent = c.city.toUpperCase();
+    panelVenue.textContent = c.venue;
+    syncAttendedButton(date);
+    renderPanelArticles(date);
+    panelEl.classList.add('show');
+    panelEl.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePanel() {
+    panelEl.classList.remove('show');
+    panelEl.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    panelDate = null;
+  }
+
+  document.getElementById('event-panel-backdrop').addEventListener('click', closePanel);
+  document.getElementById('event-panel-close').addEventListener('click', closePanel);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && panelEl.classList.contains('show')) closePanel();
+  });
+
+  attendBtn.addEventListener('click', function () {
+    if (!panelDate) return;
+    setAttended(panelDate, !hasAttended(panelDate));
+    syncAttendedButton(panelDate);
+    // Refresh the tour list so the row picks up the ★
+    renderTourList(Date.now());
   });
 
   // Exposed for the audio call-and-response: returns the current answer
