@@ -372,9 +372,110 @@
     font-size: 11px;
     line-height: 1;
   }
-  .audio-toggle.loading {
-    opacity: 0.55;
-    cursor: wait;
+  /* === Live mode + recap === */
+  .live-banner, .recap-card { display: none; }
+  .countdown-block.live .clock { display: none; }
+  .countdown-block.live .live-banner { display: block; }
+  .countdown-block.has-recap .recap-card { display: block; }
+
+  .live-banner {
+    background: var(--gold);
+    color: #000;
+    padding: 22px 18px;
+    text-align: center;
+    border-radius: 6px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    font-size: 16px;
+    margin: 4px 0;
+    animation: live-flicker 1.4s ease-in-out infinite;
+  }
+  .live-headline {
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .live-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background: #c0392b;
+    border-radius: 50%;
+    margin-right: 10px;
+    vertical-align: middle;
+    animation: live-dot-pulse 1s ease-in-out infinite;
+  }
+  .live-meta {
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+    opacity: 0.78;
+    margin-top: 8px;
+  }
+
+  .recap-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 2px solid var(--gold);
+    padding: 12px 14px;
+    margin: 0 0 16px;
+    border-radius: 2px;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .recap-head {
+    color: var(--gold);
+    font-size: 8px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .recap-text {
+    color: var(--fg);
+    margin-top: 4px;
+  }
+  .recap-city {
+    font-weight: 700;
+  }
+
+  /* === Tour list live row === */
+  .row.live {
+    background: rgba(212, 160, 23, 0.18);
+    border-left: 2px solid var(--gold);
+    padding-left: 8px;
+    margin-left: -10px;
+    border-radius: 2px;
+  }
+  .row.live .away {
+    color: var(--gold);
+    font-weight: 800;
+    animation: live-flicker 1.4s ease-in-out infinite;
+  }
+
+  /* === Clock pulse animations === */
+  .clock.pulse-tomorrow .num {
+    animation: pulse-gold 1.6s ease-in-out infinite;
+  }
+  .clock.pulse-soon {
+    animation: pulse-strong 0.9s ease-in-out infinite;
+  }
+  .clock.pulse-soon .num {
+    color: #f5c93a;
+  }
+
+  @keyframes pulse-gold {
+    0%, 100% { color: #fff; text-shadow: none; }
+    50%      { color: #f5c93a; text-shadow: 0 0 16px rgba(212, 160, 23, 0.55); }
+  }
+  @keyframes pulse-strong {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.04); }
+  }
+  @keyframes live-flicker {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.7; }
+  }
+  @keyframes live-dot-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.25); }
   }
 
   .live-tour-over {
@@ -410,7 +511,7 @@
 </header>
 
 <section class="countdown-block" id="countdown-block">
-  <div class="recap-card" id="recap-card" style="display:none">
+  <div class="recap-card" id="recap-card">
     <div class="recap-head">Ayer</div>
     <div class="recap-text">El Último estuvo en <span class="recap-city">—</span> ★</div>
   </div>
@@ -423,7 +524,7 @@
     <div class="sep">:</div>
     <div class="unit"><div class="num" id="s">--</div><div class="lbl">Seg</div></div>
   </div>
-  <div class="live-banner" id="live-banner" style="display:none">
+  <div class="live-banner" id="live-banner">
     <div class="live-headline"><span class="live-dot"></span>EN DIRECTO</div>
     <div class="live-meta" id="live-meta">EMPEZÓ HACE — MIN</div>
   </div>
@@ -502,63 +603,145 @@
 
   function pad(n) { return String(n).padStart(2, '0'); }
 
-  // Persistent user pick (date string, e.g. "2026-06-27"), or null
+  // === Constants ===
   const STORAGE_KEY = 'eudlf.selectedDate';
-  const HASH_RE = /^#(\d{4}-\d{2}-\d{2})$/;
+  const HASH_DATE_RE = /^#(\d{4}-\d{2}-\d{2})$/;
+  const HASH_SLUG_RE = /^#([a-z][a-z0-9-]*)$/;
+  const SHOW_DURATION_MS = 3 * 3600 * 1000;   // 3h live window after start
+  const RECAP_WINDOW_MS  = 24 * 3600 * 1000;  // "ayer" card window
+  const SOON_MS     = 2 * 3600 * 1000;
+  const TOMORROW_MS = 24 * 3600 * 1000;
+  const WEEK_MS     = 7 * 86400 * 1000;
+
+  // === City slugs ===
+  function slugify(s) {
+    return s.normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+  const cityCounts = items.reduce(function (m, c) {
+    const k = slugify(c.city);
+    m[k] = (m[k] || 0) + 1;
+    return m;
+  }, {});
+
+  function preferredHashFor(date) {
+    const c = items.find(function (x) { return x.date === date; });
+    if (!c) return '#' + date;
+    const slug = slugify(c.city);
+    return cityCounts[slug] === 1 ? '#' + slug : '#' + date;
+  }
+
+  function dateFromHash() {
+    const dm = location.hash.match(HASH_DATE_RE);
+    if (dm) return items.some(function (c) { return c.date === dm[1]; }) ? dm[1] : null;
+    const sm = location.hash.match(HASH_SLUG_RE);
+    if (sm) {
+      const matches = items.filter(function (c) { return slugify(c.city) === sm[1]; });
+      if (!matches.length) return null;
+      const now = Date.now();
+      const next = matches.find(function (c) { return c.ts > now; });
+      return (next || matches[matches.length - 1]).date;
+    }
+    return null;
+  }
+
+  function setUrlSelection(date) {
+    const newHash = date ? preferredHashFor(date) : '';
+    if (location.hash === newHash) return;
+    if (date) {
+      history.replaceState(null, '', newHash);
+    } else {
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+  }
+
+  // === Selection state ===
   let selectedDate = null;
   let pastSelectionNotice = null;
 
-  function dateFromHash() {
-    const m = location.hash.match(HASH_RE);
-    return m ? m[1] : null;
-  }
-
-  function isKnownDate(d) {
-    return !!d && concerts.some(c => c.date === d);
-  }
-
-  // URL hash takes precedence over localStorage so a shared link always wins
-  const hashDate = dateFromHash();
-  if (isKnownDate(hashDate)) {
-    selectedDate = hashDate;
-    try { localStorage.setItem(STORAGE_KEY, hashDate); } catch (e) {}
+  const initial = dateFromHash();
+  if (initial) {
+    selectedDate = initial;
+    try { localStorage.setItem(STORAGE_KEY, initial); } catch (e) {}
   } else {
     try { selectedDate = localStorage.getItem(STORAGE_KEY) || null; } catch (e) {}
   }
 
-  function setUrlSelection(date) {
-    const target = date ? '#' + date : location.pathname + location.search;
-    if (location.hash !== (date ? '#' + date : '')) {
-      history.replaceState(null, '', target);
-    }
-  }
-
+  // === Lookups ===
   function findNext(now) {
-    return items.find(c => c.ts > now);
+    return items.find(function (c) { return c.ts > now; });
+  }
+  function findLive(now) {
+    return items.find(function (c) { return c.ts <= now && now < c.ts + SHOW_DURATION_MS; });
+  }
+  function findRecentlyEnded(now) {
+    for (let i = items.length - 1; i >= 0; i--) {
+      const c = items[i];
+      const end = c.ts + SHOW_DURATION_MS;
+      if (end <= now && end > now - RECAP_WINDOW_MS) return c;
+    }
+    return null;
   }
 
   function findSelected(now) {
     if (!selectedDate) return null;
-    const sel = items.find(c => c.date === selectedDate);
+    const sel = items.find(function (c) { return c.date === selectedDate; });
     if (!sel) return null;
-    if (sel.ts <= now) {
-      pastSelectionNotice = sel.city;
-      selectedDate = null;
-      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-      return null;
-    }
-    return sel;
+    if (now < sel.ts + SHOW_DURATION_MS) return sel;
+    pastSelectionNotice = sel.city;
+    selectedDate = null;
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    setUrlSelection(null);
+    return null;
   }
 
-  // Returns { concert, isCustom } or null when tour is over
   function currentTarget(now) {
     const sel = findSelected(now);
-    if (sel) return { concert: sel, isCustom: true };
+    if (sel) return { concert: sel, isCustom: true, isLive: now >= sel.ts };
+    const live = findLive(now);
+    if (live) return { concert: live, isCustom: false, isLive: true };
     const next = findNext(now);
-    return next ? { concert: next, isCustom: false } : null;
+    if (next) return { concert: next, isCustom: false, isLive: false };
+    return null;
   }
 
-  function renderClock(target, now) {
+  function distanceOf(ms) {
+    if (ms > WEEK_MS) return 'far';
+    if (ms > TOMORROW_MS) return 'week';
+    if (ms > SOON_MS) return 'tomorrow';
+    if (ms > 0) return 'soon';
+    return 'now';
+  }
+
+  function labelFor(distance, isCustom) {
+    if (distance === 'now') {
+      return isCustom ? 'Tu concierto, ahora en' : 'En directo desde';
+    }
+    if (isCustom) {
+      if (distance === 'tomorrow') return '¡Tu concierto es mañana!';
+      if (distance === 'soon')     return '¡Tu concierto empieza pronto!';
+      return 'Tu concierto en';
+    }
+    switch (distance) {
+      case 'week':     return 'Esta semana en';
+      case 'tomorrow': return '¡Es mañana!';
+      case 'soon':     return '¡Empieza pronto!';
+      default:         return 'Próximo concierto en';
+    }
+  }
+
+  // === Rendering ===
+  function relDays(target, now) {
+    const diff = target - now;
+    if (diff < 0) return null;
+    const days = Math.floor(diff / 86400000);
+    const hrs  = Math.floor((diff % 86400000) / 3600000);
+    if (days === 0) return hrs + 'h';
+    if (days === 1) return 'mañana';
+    return days + 'd';
+  }
+
+  function renderClock(target, now, distance) {
     const total = Math.max(0, target - now);
     const totalHours = Math.floor(total / 3600000);
     const min = Math.floor((total % 3600000) / 60000);
@@ -566,11 +749,13 @@
     const clock = document.getElementById('clock');
     const hLbl = document.getElementById('h-lbl');
 
+    clock.classList.toggle('pulse-tomorrow', distance === 'tomorrow');
+    clock.classList.toggle('pulse-soon',     distance === 'soon');
+
     if (totalHours < 48) {
-      // Within ~2 days: drop the days unit and show total hours instead
       clock.classList.add('hours-only');
       document.getElementById('h').textContent = pad(totalHours);
-      hLbl.textContent = 'Horas';
+      hLbl.textContent = totalHours === 1 ? 'Hora' : 'Horas';
     } else {
       clock.classList.remove('hours-only');
       const days = Math.floor(total / 86400000);
@@ -583,76 +768,96 @@
     document.getElementById('s').textContent = pad(sec);
   }
 
-  function relDays(target, now) {
-    const diff = target - now;
-    if (diff < 0) return null;
-    const days = Math.floor(diff / 86400000);
-    const hrs  = Math.floor((diff % 86400000) / 3600000);
-    if (days === 0) return hrs + 'h';
-    if (days === 1) return 'mañana';
-    return days + 'd';
+  function renderLiveBanner(concert, now) {
+    const sinceMs = Math.max(0, now - concert.ts);
+    const minutes = Math.floor(sinceMs / 60000);
+    const meta = document.getElementById('live-meta');
+    if (minutes === 0)        meta.textContent = 'ACABA DE EMPEZAR';
+    else if (minutes < 60)    meta.textContent = 'EMPEZÓ HACE ' + minutes + ' MIN';
+    else                       meta.textContent = 'EMPEZÓ HACE ' + Math.floor(minutes / 60) + 'H ' + pad(minutes % 60) + 'M';
   }
 
   function renderTourList(now) {
     const list = document.getElementById('tour-list');
     const next = findNext(now);
-    list.innerHTML = items.map(c => {
-      const isPast = c.ts <= now;
-      const isNext = next && c.ts === next.ts;
+    list.innerHTML = items.map(function (c) {
+      const isPast = c.ts + SHOW_DURATION_MS <= now;
+      const isLive = !isPast && c.ts <= now;
+      const isNext = next && c.ts === next.ts && !isLive;
       const isSelected = selectedDate === c.date;
       const cls = ['row'];
       if (isPast) cls.push('past');
+      else if (isLive) cls.push('live');
       else if (isNext) cls.push('now');
       if (isSelected) cls.push('selected');
-      const away = isPast ? '' : (relDays(c.ts, now) || '');
+      let away;
+      if (isLive) away = 'EN VIVO';
+      else if (isPast) away = '';
+      else away = relDays(c.ts, now) || '';
       const tabAttr = isPast ? '' : ' tabindex="0" role="button"';
-      return `
-        <div class="${cls.join(' ')}" data-date="${c.date}"${tabAttr}>
-          <span class="date">${shortDateFmt.format(c.ts).replace('.', '')}</span>
-          <span>
-            <span class="city">${c.city}</span>
-            <span class="venue">${c.venue}</span>
-          </span>
-          <span class="away">${away}</span>
-        </div>
-      `;
+      return ''
+        + '<div class="' + cls.join(' ') + '" data-date="' + c.date + '"' + tabAttr + '>'
+        +   '<span class="date">' + shortDateFmt.format(c.ts).replace('.', '') + '</span>'
+        +   '<span>'
+        +     '<span class="city">' + c.city + '</span>'
+        +     '<span class="venue">' + c.venue + '</span>'
+        +   '</span>'
+        +   '<span class="away">' + away + '</span>'
+        + '</div>';
     }).join('');
 
-    const remaining = items.filter(c => c.ts > now).length;
+    const remaining = items.filter(function (c) { return c.ts + SHOW_DURATION_MS > now; }).length;
     document.getElementById('tour-count').textContent =
       remaining === 0 ? 'Gira finalizada' :
       remaining === 1 ? '1 fecha restante' :
       remaining + ' fechas restantes';
   }
 
-  function renderHeader(state) {
-    const block = document.getElementById('countdown-block');
+  function renderHeader(state, now) {
     const heroInfo = document.getElementById('hero-info');
+    const block = document.getElementById('countdown-block');
+
     if (!state) {
       if (heroInfo) heroInfo.style.display = 'none';
-      block.innerHTML = `
-        <div class="live-tour-over">
-          <h2>Gira finalizada</h2>
-          <p>Hasta la próxima.</p>
-        </div>
-      `;
+      block.classList.remove('live', 'has-recap');
+      block.innerHTML = ''
+        + '<div class="live-tour-over">'
+        +   '<h2>Gira finalizada</h2>'
+        +   '<p>Hasta la próxima.</p>'
+        + '</div>';
       return;
     }
+
     if (heroInfo) heroInfo.style.display = '';
-    const { concert, isCustom } = state;
-    document.getElementById('cd-label').textContent =
-      isCustom ? 'Tu concierto en' : 'Próximo concierto en';
+    const concert = state.concert;
+    const isCustom = state.isCustom;
+    const isLive = state.isLive;
+    const distance = isLive ? 'now' : distanceOf(concert.ts - now);
+
+    document.getElementById('cd-label').textContent = labelFor(distance, isCustom);
     document.getElementById('next-toggle').classList.toggle('hidden', !isCustom);
     document.getElementById('next-city').textContent = concert.city.toUpperCase();
     document.getElementById('next-venue').textContent = concert.venue;
     document.getElementById('next-date').textContent =
       dateFmt.format(concert.ts) + (concert.time ? ' · ' + concert.time : '');
-
     document.getElementById('time-note').style.display = concert.time ? 'none' : 'block';
+
+    block.classList.toggle('live', isLive);
+
+    // Recap card: previous concert ended within the last 24h, only when not live
+    // and not stepping on the past-selection notice for the same situation.
+    const recap = !isLive ? findRecentlyEnded(now) : null;
+    const recapEl = document.getElementById('recap-card');
+    if (recap && recap.date !== concert.date && !pastSelectionNotice) {
+      recapEl.querySelector('.recap-city').textContent = recap.city;
+      block.classList.add('has-recap');
+    } else {
+      block.classList.remove('has-recap');
+    }
 
     const note = document.getElementById('past-note');
     if (pastSelectionNotice && !isCustom) {
-      note.textContent = `Tu concierto en ${pastSelectionNotice} ya finalizó.`;
+      note.textContent = 'Tu concierto en ' + pastSelectionNotice + ' ya finalizó.';
       note.style.display = 'block';
     } else {
       note.style.display = 'none';
@@ -663,13 +868,24 @@
   function tick() {
     const now = Date.now();
     const state = currentTarget(now);
-    const key = state ? `${state.concert.ts}-${state.isCustom}-${pastSelectionNotice || ''}` : 'over';
+    let key;
+    if (state) {
+      const distance = state.isLive ? 'now' : distanceOf(state.concert.ts - now);
+      const recap = !state.isLive ? findRecentlyEnded(now) : null;
+      key = state.concert.ts + '|' + state.isCustom + '|' + state.isLive + '|' + distance
+          + '|' + (pastSelectionNotice || '') + '|' + (recap ? recap.date : '');
+    } else {
+      key = 'over';
+    }
     if (key !== lastKey) {
-      renderHeader(state);
+      renderHeader(state, now);
       renderTourList(now);
       lastKey = key;
     }
-    if (state) renderClock(state.concert.ts, now);
+    if (state) {
+      if (state.isLive) renderLiveBanner(state.concert, now);
+      else renderClock(state.concert.ts, now, distanceOf(state.concert.ts - now));
+    }
   }
 
   function selectConcert(date) {
@@ -683,11 +899,10 @@
       try { localStorage.setItem(STORAGE_KEY, date); } catch (e) {}
       setUrlSelection(date);
     }
-    lastKey = null; // force re-render
+    lastKey = null;
     tick();
   }
 
-  // Click delegation for tour rows
   document.getElementById('tour-list').addEventListener('click', function (e) {
     const row = e.target.closest('.row');
     if (!row || row.classList.contains('past')) return;
@@ -695,7 +910,6 @@
     if (date) selectConcert(date);
   });
 
-  // Keyboard accessibility
   document.getElementById('tour-list').addEventListener('keydown', function (e) {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const row = e.target.closest('.row');
@@ -705,7 +919,6 @@
     if (date) selectConcert(date);
   });
 
-  // "Ver próximo" button clears the selection
   document.getElementById('next-toggle').addEventListener('click', function () {
     selectedDate = null;
     pastSelectionNotice = null;
@@ -715,10 +928,9 @@
     tick();
   });
 
-  // Respond to back/forward and manual hash edits
   window.addEventListener('hashchange', function () {
     const d = dateFromHash();
-    if (isKnownDate(d)) {
+    if (d) {
       selectedDate = d;
       pastSelectionNotice = null;
       try { localStorage.setItem(STORAGE_KEY, d); } catch (e) {}
