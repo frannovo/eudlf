@@ -222,6 +222,81 @@
     font-weight: 700;
   }
 
+  .row {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+  }
+
+  .row:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .row.selected {
+    background: rgba(212, 160, 23, 0.12);
+    border-left: 2px solid var(--gold);
+    padding-left: 8px;
+    margin-left: -10px;
+    border-radius: 2px;
+  }
+
+  .row.selected .city::after {
+    content: ' ★';
+    color: var(--gold);
+    font-size: 10px;
+  }
+
+  .row.selected .away {
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  .row.now.selected {
+    background: rgba(212, 160, 23, 0.18);
+  }
+
+  .label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    min-height: 18px;
+  }
+
+  .label-row .label {
+    margin-bottom: 0;
+  }
+
+  .next-toggle {
+    background: transparent;
+    border: 1px solid rgba(212, 160, 23, 0.4);
+    color: var(--gold);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+
+  .next-toggle:hover {
+    background: rgba(212, 160, 23, 0.1);
+  }
+
+  .next-toggle.hidden {
+    display: none;
+  }
+
+  .past-note {
+    font-size: 10px;
+    color: var(--gold);
+    margin-top: 6px;
+    opacity: 0.85;
+  }
+
   .footer {
     text-align: center;
     padding: 22px 22px 30px;
@@ -256,7 +331,10 @@
 </header>
 
 <section class="countdown-block" id="countdown-block">
-  <div class="label" id="cd-label">Próximo concierto en</div>
+  <div class="label-row">
+    <div class="label" id="cd-label">Próximo concierto en</div>
+    <button type="button" class="next-toggle hidden" id="next-toggle">Ver próximo</button>
+  </div>
   <div class="clock" id="clock">
     <div class="unit"><div class="num" id="d">--</div><div class="lbl">Días</div></div>
     <div class="sep">:</div>
@@ -270,6 +348,7 @@
     <div class="next-city" id="next-city">—</div>
     <div class="next-venue" id="next-venue">—</div>
     <div class="next-date" id="next-date">—</div>
+    <div class="past-note" id="past-note" style="display:none"></div>
   </div>
 </section>
 
@@ -328,8 +407,35 @@
 
   function pad(n) { return String(n).padStart(2, '0'); }
 
+  // Persistent user pick (date string, e.g. "2026-06-27"), or null
+  const STORAGE_KEY = 'eudlf.selectedDate';
+  let selectedDate = null;
+  let pastSelectionNotice = null;
+  try { selectedDate = localStorage.getItem(STORAGE_KEY) || null; } catch (e) { /* private mode */ }
+
   function findNext(now) {
     return items.find(c => c.ts > now);
+  }
+
+  function findSelected(now) {
+    if (!selectedDate) return null;
+    const sel = items.find(c => c.date === selectedDate);
+    if (!sel) return null;
+    if (sel.ts <= now) {
+      pastSelectionNotice = sel.city;
+      selectedDate = null;
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      return null;
+    }
+    return sel;
+  }
+
+  // Returns { concert, isCustom } or null when tour is over
+  function currentTarget(now) {
+    const sel = findSelected(now);
+    if (sel) return { concert: sel, isCustom: true };
+    const next = findNext(now);
+    return next ? { concert: next, isCustom: false } : null;
   }
 
   function renderClock(target, now) {
@@ -360,10 +466,15 @@
     list.innerHTML = items.map(c => {
       const isPast = c.ts <= now;
       const isNext = next && c.ts === next.ts;
-      const cls = isPast ? 'row past' : (isNext ? 'row now' : 'row');
+      const isSelected = selectedDate === c.date;
+      const cls = ['row'];
+      if (isPast) cls.push('past');
+      else if (isNext) cls.push('now');
+      if (isSelected) cls.push('selected');
       const away = isPast ? '' : (relDays(c.ts, now) || '');
+      const tabAttr = isPast ? '' : ' tabindex="0" role="button"';
       return `
-        <div class="${cls}">
+        <div class="${cls.join(' ')}" data-date="${c.date}"${tabAttr}>
           <span class="date">${shortDateFmt.format(c.ts).replace('.', '')}</span>
           <span>
             <span class="city">${c.city}</span>
@@ -381,34 +492,86 @@
       remaining + ' fechas restantes';
   }
 
-  function renderNext(now) {
-    const next = findNext(now);
+  function renderHeader(state) {
     const block = document.getElementById('countdown-block');
-    if (!next) {
+    if (!state) {
       block.innerHTML = `
         <div class="live-tour-over">
           <h2>Gira finalizada</h2>
           <p>Hasta la próxima.</p>
         </div>
       `;
-      return null;
+      return;
     }
-    document.getElementById('next-city').textContent = next.city.toUpperCase();
-    document.getElementById('next-venue').textContent = next.venue;
-    document.getElementById('next-date').textContent = dateFmt.format(next.ts);
-    return next.ts;
+    const { concert, isCustom } = state;
+    document.getElementById('cd-label').textContent =
+      isCustom ? 'Tu concierto en' : 'Próximo concierto en';
+    document.getElementById('next-toggle').classList.toggle('hidden', !isCustom);
+    document.getElementById('next-city').textContent = concert.city.toUpperCase();
+    document.getElementById('next-venue').textContent = concert.venue;
+    document.getElementById('next-date').textContent = dateFmt.format(concert.ts);
+
+    const note = document.getElementById('past-note');
+    if (pastSelectionNotice && !isCustom) {
+      note.textContent = `Tu concierto en ${pastSelectionNotice} ya finalizó.`;
+      note.style.display = 'block';
+    } else {
+      note.style.display = 'none';
+    }
   }
 
-  let target;
+  let lastKey = null;
   function tick() {
     const now = Date.now();
-    if (target == null || target <= now) {
-      target = renderNext(now);
+    const state = currentTarget(now);
+    const key = state ? `${state.concert.ts}-${state.isCustom}-${pastSelectionNotice || ''}` : 'over';
+    if (key !== lastKey) {
+      renderHeader(state);
       renderTourList(now);
-    } else {
-      renderClock(target, now);
+      lastKey = key;
     }
+    if (state) renderClock(state.concert.ts, now);
   }
+
+  function selectConcert(date) {
+    if (selectedDate === date) {
+      selectedDate = null;
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    } else {
+      selectedDate = date;
+      pastSelectionNotice = null;
+      try { localStorage.setItem(STORAGE_KEY, date); } catch (e) {}
+    }
+    lastKey = null; // force re-render
+    tick();
+  }
+
+  // Click delegation for tour rows
+  document.getElementById('tour-list').addEventListener('click', function (e) {
+    const row = e.target.closest('.row');
+    if (!row || row.classList.contains('past')) return;
+    const date = row.getAttribute('data-date');
+    if (date) selectConcert(date);
+  });
+
+  // Keyboard accessibility
+  document.getElementById('tour-list').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const row = e.target.closest('.row');
+    if (!row || row.classList.contains('past')) return;
+    e.preventDefault();
+    const date = row.getAttribute('data-date');
+    if (date) selectConcert(date);
+  });
+
+  // "Ver próximo" button clears the selection
+  document.getElementById('next-toggle').addEventListener('click', function () {
+    selectedDate = null;
+    pastSelectionNotice = null;
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    lastKey = null;
+    tick();
+  });
 
   tick();
   setInterval(tick, 1000);
