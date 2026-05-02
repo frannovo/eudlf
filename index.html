@@ -224,11 +224,17 @@
     color: var(--muted);
   }
 
-  .row.past { opacity: 0.35; }
+  .row.past { opacity: 0.55; }
 
-  .row.past .away::before {
-    content: '✓';
+  .row.past:hover { opacity: 0.85; }
+
+  .row.past .away {
     color: var(--gold);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 9px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
   }
 
   .row.now {
@@ -1143,9 +1149,17 @@
       if (isSelected) cls.push('selected');
       if (wasAttended) cls.push('attended');
       let away;
-      if (isLive) away = 'EN VIVO';
-      else if (isPast) away = '';
-      else away = relDays(c.ts, now) || '';
+      if (isLive) {
+        away = 'EN VIVO';
+      } else if (isPast) {
+        const data = PAST_EVENTS[c.date];
+        const n = data && data.articles ? data.articles.length : 0;
+        away = n > 0
+          ? n + (n === 1 ? ' crónica →' : ' crónicas →')
+          : 'Ver más →';
+      } else {
+        away = relDays(c.ts, now) || '';
+      }
       // Past rows are now tappable (open the press panel)
       return ''
         + '<div class="' + cls.join(' ') + '" data-date="' + c.date + '" tabindex="0" role="button">'
