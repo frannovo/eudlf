@@ -130,6 +130,11 @@
     margin-top: 4px;
   }
 
+  .clock.hours-only .unit-days,
+  .clock.hours-only .sep-days {
+    display: none;
+  }
+
   .next-info {
     margin-top: 0;
   }
@@ -152,6 +157,14 @@
     color: var(--muted);
     margin-top: 8px;
     text-transform: capitalize;
+  }
+
+  .time-note {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: 4px;
+    font-style: italic;
+    letter-spacing: 0.3px;
   }
 
   .tour {
@@ -320,6 +333,10 @@
     border-bottom: 1px solid var(--line);
   }
 
+  .footer .disclaimer {
+    margin-top: 8px;
+  }
+
   .live-tour-over {
     text-align: center;
     padding: 40px 22px;
@@ -346,20 +363,29 @@
       <div class="next-city" id="next-city">—</div>
       <div class="next-venue" id="next-venue">—</div>
       <div class="next-date" id="next-date">—</div>
+      <div class="time-note" id="time-note" style="display:none">Horario por confirmar</div>
       <div class="past-note" id="past-note" style="display:none"></div>
     </div>
   </div>
 </header>
 
 <section class="countdown-block" id="countdown-block">
+  <div class="recap-card" id="recap-card" style="display:none">
+    <div class="recap-head">Ayer</div>
+    <div class="recap-text">El Último estuvo en <span class="recap-city">—</span> ★</div>
+  </div>
   <div class="clock" id="clock">
-    <div class="unit"><div class="num" id="d">--</div><div class="lbl">Días</div></div>
-    <div class="sep">:</div>
-    <div class="unit"><div class="num" id="h">--</div><div class="lbl">Hrs</div></div>
+    <div class="unit unit-days"><div class="num" id="d">--</div><div class="lbl">Días</div></div>
+    <div class="sep sep-days">:</div>
+    <div class="unit"><div class="num" id="h">--</div><div class="lbl" id="h-lbl">Hrs</div></div>
     <div class="sep">:</div>
     <div class="unit"><div class="num" id="m">--</div><div class="lbl">Min</div></div>
     <div class="sep">:</div>
     <div class="unit"><div class="num" id="s">--</div><div class="lbl">Seg</div></div>
+  </div>
+  <div class="live-banner" id="live-banner" style="display:none">
+    <div class="live-headline"><span class="live-dot"></span>EN DIRECTO</div>
+    <div class="live-meta" id="live-meta">EMPEZÓ HACE — MIN</div>
   </div>
 </section>
 
@@ -372,41 +398,47 @@
 </section>
 
 <footer class="footer">
-  Cuenta atrás no oficial · datos de
-  <a href="https://elultimodelafila.com/conciertos/" target="_blank" rel="noopener">elultimodelafila.com</a>
+  <div>
+    Cuenta atrás no oficial · datos de
+    <a href="https://elultimodelafila.com/conciertos/" target="_blank" rel="noopener">elultimodelafila.com</a>
+  </div>
+  <div class="disclaimer">
+    Horarios sujetos a cambios · verifica en
+    <a href="https://www.ticketmaster.es/search?q=el+ultimo+de+la+fila" target="_blank" rel="noopener">Ticketmaster</a>
+  </div>
 </footer>
 
 <script>
 (function () {
-  // Concert data — date is the show start in Madrid local time.
-  // No official start times published; defaulting to 21:30 local (typical Spain show).
+  // Concert data. `time` is the show start in Madrid local time when confirmed
+  // by Ticketmaster; null means the time is still pending.
   const TZ = 'Europe/Madrid';
-  const DEFAULT_HOUR = 21;
-  const DEFAULT_MINUTE = 30;
+  const FALLBACK_TIME = '21:00'; // used only for the countdown target when time is unknown
 
   const concerts = [
-    { date: '2026-04-25', city: 'Fuengirola',             venue: 'Marenostrum Fuengirola' },
-    { date: '2026-05-03', city: 'Barcelona',              venue: 'Estadi Olímpic Lluís Companys' },
-    { date: '2026-05-07', city: 'Barcelona',              venue: 'Estadi Olímpic Lluís Companys' },
-    { date: '2026-05-16', city: 'Roquetas de Mar',        venue: 'Estadio Municipal Antonio Peroles' },
-    { date: '2026-05-23', city: 'Madrid',                 venue: 'Riyadh Air Metropolitano' },
-    { date: '2026-05-30', city: 'Bilbao',                 venue: 'Bizkaia Arena BEC!' },
-    { date: '2026-06-05', city: 'Bilbao',                 venue: 'Bizkaia Arena BEC!' },
-    { date: '2026-06-13', city: 'Santiago de Compostela', venue: 'Auditorio Monte do Gozo' },
-    { date: '2026-06-20', city: 'Avilés',                 venue: 'Exterior del Pabellón de la Magdalena' },
-    { date: '2026-06-27', city: 'Sevilla',                venue: 'Estadio de la Cartuja' },
-    { date: '2026-07-04', city: 'Valencia',               venue: 'Estadio Ciutat de València' },
-    { date: '2026-07-09', city: 'Valencia',               venue: 'Estadio Ciutat de València' }
+    { date: '2026-04-25', city: 'Fuengirola',             venue: 'Marenostrum Fuengirola',                 time: null    },
+    { date: '2026-05-03', city: 'Barcelona',              venue: 'Estadi Olímpic Lluís Companys',          time: '20:30' },
+    { date: '2026-05-07', city: 'Barcelona',              venue: 'Estadi Olímpic Lluís Companys',          time: '20:30' },
+    { date: '2026-05-16', city: 'Roquetas de Mar',        venue: 'Estadio Municipal Antonio Peroles',      time: '22:00' },
+    { date: '2026-05-23', city: 'Madrid',                 venue: 'Riyadh Air Metropolitano',               time: '20:30' },
+    { date: '2026-05-30', city: 'Bilbao',                 venue: 'Bizkaia Arena BEC!',                     time: '21:30' },
+    { date: '2026-06-05', city: 'Bilbao',                 venue: 'Bizkaia Arena BEC!',                     time: '21:30' },
+    { date: '2026-06-13', city: 'Santiago de Compostela', venue: 'Auditorio Monte do Gozo',                time: '22:30' },
+    { date: '2026-06-20', city: 'Avilés',                 venue: 'Exterior del Pabellón de la Magdalena',  time: '22:30' },
+    { date: '2026-06-27', city: 'Sevilla',                venue: 'Estadio de la Cartuja',                  time: '22:30' },
+    { date: '2026-07-04', city: 'Valencia',               venue: 'Estadio Ciutat de València',             time: '22:30' },
+    { date: '2026-07-09', city: 'Valencia',               venue: 'Estadio Ciutat de València',             time: '22:30' }
   ];
 
   // Madrid is UTC+1 in winter, UTC+2 in summer. All concerts fall in CEST (Apr-Jul).
-  // Convert local Madrid 21:30 → UTC: subtract 2h. Hardcoded since DST change is Mar 29 2026.
-  function toUtcMs(dateStr) {
+  // Subtract 2h from local time to get UTC. Hardcoded since DST change is Mar 29 2026.
+  function toUtcMs(dateStr, timeStr) {
     const [y, mo, d] = dateStr.split('-').map(Number);
-    return Date.UTC(y, mo - 1, d, DEFAULT_HOUR - 2, DEFAULT_MINUTE);
+    const [hh, mm] = (timeStr || FALLBACK_TIME).split(':').map(Number);
+    return Date.UTC(y, mo - 1, d, hh - 2, mm);
   }
 
-  const items = concerts.map(c => ({ ...c, ts: toUtcMs(c.date) }));
+  const items = concerts.map(c => ({ ...c, ts: toUtcMs(c.date, c.time) }));
 
   const dateFmt = new Intl.DateTimeFormat('es-ES', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -420,9 +452,34 @@
 
   // Persistent user pick (date string, e.g. "2026-06-27"), or null
   const STORAGE_KEY = 'eudlf.selectedDate';
+  const HASH_RE = /^#(\d{4}-\d{2}-\d{2})$/;
   let selectedDate = null;
   let pastSelectionNotice = null;
-  try { selectedDate = localStorage.getItem(STORAGE_KEY) || null; } catch (e) { /* private mode */ }
+
+  function dateFromHash() {
+    const m = location.hash.match(HASH_RE);
+    return m ? m[1] : null;
+  }
+
+  function isKnownDate(d) {
+    return !!d && concerts.some(c => c.date === d);
+  }
+
+  // URL hash takes precedence over localStorage so a shared link always wins
+  const hashDate = dateFromHash();
+  if (isKnownDate(hashDate)) {
+    selectedDate = hashDate;
+    try { localStorage.setItem(STORAGE_KEY, hashDate); } catch (e) {}
+  } else {
+    try { selectedDate = localStorage.getItem(STORAGE_KEY) || null; } catch (e) {}
+  }
+
+  function setUrlSelection(date) {
+    const target = date ? '#' + date : location.pathname + location.search;
+    if (location.hash !== (date ? '#' + date : '')) {
+      history.replaceState(null, '', target);
+    }
+  }
 
   function findNext(now) {
     return items.find(c => c.ts > now);
@@ -451,12 +508,25 @@
 
   function renderClock(target, now) {
     const total = Math.max(0, target - now);
-    const days = Math.floor(total / 86400000);
-    const hrs  = Math.floor((total % 86400000) / 3600000);
-    const min  = Math.floor((total % 3600000) / 60000);
-    const sec  = Math.floor((total % 60000) / 1000);
-    document.getElementById('d').textContent = pad(days);
-    document.getElementById('h').textContent = pad(hrs);
+    const totalHours = Math.floor(total / 3600000);
+    const min = Math.floor((total % 3600000) / 60000);
+    const sec = Math.floor((total % 60000) / 1000);
+    const clock = document.getElementById('clock');
+    const hLbl = document.getElementById('h-lbl');
+
+    if (totalHours < 48) {
+      // Within ~2 days: drop the days unit and show total hours instead
+      clock.classList.add('hours-only');
+      document.getElementById('h').textContent = pad(totalHours);
+      hLbl.textContent = 'Horas';
+    } else {
+      clock.classList.remove('hours-only');
+      const days = Math.floor(total / 86400000);
+      const hrs  = Math.floor((total % 86400000) / 3600000);
+      document.getElementById('d').textContent = pad(days);
+      document.getElementById('h').textContent = pad(hrs);
+      hLbl.textContent = 'Hrs';
+    }
     document.getElementById('m').textContent = pad(min);
     document.getElementById('s').textContent = pad(sec);
   }
@@ -523,7 +593,10 @@
     document.getElementById('next-toggle').classList.toggle('hidden', !isCustom);
     document.getElementById('next-city').textContent = concert.city.toUpperCase();
     document.getElementById('next-venue').textContent = concert.venue;
-    document.getElementById('next-date').textContent = dateFmt.format(concert.ts);
+    document.getElementById('next-date').textContent =
+      dateFmt.format(concert.ts) + (concert.time ? ' · ' + concert.time : '');
+
+    document.getElementById('time-note').style.display = concert.time ? 'none' : 'block';
 
     const note = document.getElementById('past-note');
     if (pastSelectionNotice && !isCustom) {
@@ -551,10 +624,12 @@
     if (selectedDate === date) {
       selectedDate = null;
       try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      setUrlSelection(null);
     } else {
       selectedDate = date;
       pastSelectionNotice = null;
       try { localStorage.setItem(STORAGE_KEY, date); } catch (e) {}
+      setUrlSelection(date);
     }
     lastKey = null; // force re-render
     tick();
@@ -583,6 +658,22 @@
     selectedDate = null;
     pastSelectionNotice = null;
     try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    setUrlSelection(null);
+    lastKey = null;
+    tick();
+  });
+
+  // Respond to back/forward and manual hash edits
+  window.addEventListener('hashchange', function () {
+    const d = dateFromHash();
+    if (isKnownDate(d)) {
+      selectedDate = d;
+      pastSelectionNotice = null;
+      try { localStorage.setItem(STORAGE_KEY, d); } catch (e) {}
+    } else if (!location.hash) {
+      selectedDate = null;
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    }
     lastKey = null;
     tick();
   });
