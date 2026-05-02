@@ -57,6 +57,25 @@
     overflow: hidden;
   }
 
+  .hero-alt {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 1.4s ease-in-out;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .hero-alt::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.85) 80%, rgba(0, 0, 0, 1) 100%);
+  }
+  .hero.show-alt .hero-alt { opacity: 1; }
+  .hero .rotulo, .hero .hero-info { position: absolute; z-index: 2; }
+
   .rotulo {
     position: absolute;
     left: 50%;
@@ -576,10 +595,9 @@
     transform: translateX(0);
   }
   .event-panel-close {
-    position: sticky;
+    position: absolute;
     top: 12px;
-    margin-left: auto;
-    margin-right: 12px;
+    right: 12px;
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.18);
     color: var(--fg);
@@ -588,7 +606,7 @@
     border-radius: 50%;
     font-size: 22px;
     cursor: pointer;
-    z-index: 1;
+    z-index: 4;
     font-family: inherit;
     display: flex;
     align-items: center;
@@ -598,10 +616,29 @@
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
   }
+  .event-panel-photo {
+    width: 100%;
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    display: none;
+  }
+  .event-panel-photo.show { display: block; }
+  .event-panel-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 40%, #0a0a0a 100%);
+  }
   .event-panel-header {
-    padding: 0 22px 18px;
-    margin-top: -36px;
+    padding: 22px 22px 18px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    z-index: 2;
+  }
+  .event-panel-photo.show + .event-panel-header {
+    margin-top: -50px;
   }
   .event-panel-meta {
     font-size: 9px;
@@ -739,6 +776,7 @@
 <body>
 
 <header class="hero" id="hero">
+  <div class="hero-alt" id="hero-alt" aria-hidden="true"></div>
   <img class="rotulo" src="assets/rotulo.png" alt="El Último de la Fila">
   <div class="hero-info" id="hero-info">
     <div class="label-row">
@@ -787,6 +825,7 @@
   <div class="event-panel-backdrop" id="event-panel-backdrop"></div>
   <div class="event-panel-content" role="dialog" aria-labelledby="event-panel-city">
     <button type="button" class="event-panel-close" id="event-panel-close" aria-label="Cerrar panel">×</button>
+    <div class="event-panel-photo" id="event-panel-photo" aria-hidden="true"></div>
     <header class="event-panel-header">
       <div class="event-panel-meta" id="event-panel-meta">—</div>
       <h2 class="event-panel-city" id="event-panel-city">—</h2>
@@ -950,6 +989,28 @@
     } catch (e) {
       return 'Fuente';
     }
+  }
+
+  // === Venue photo loader (probes assets/<slug>.{jpg,png,webp}) ===
+  const VENUE_PHOTO_CACHE = {};
+  function loadVenuePhoto(slug) {
+    if (slug in VENUE_PHOTO_CACHE) return Promise.resolve(VENUE_PHOTO_CACHE[slug]);
+    const exts = ['jpg', 'png', 'webp'];
+    return new Promise(function (resolve) {
+      let i = 0;
+      function tryNext() {
+        if (i >= exts.length) {
+          VENUE_PHOTO_CACHE[slug] = null;
+          return resolve(null);
+        }
+        const url = 'assets/' + slug + '.' + exts[i++];
+        const img = new Image();
+        img.onload  = function () { VENUE_PHOTO_CACHE[slug] = url; resolve(url); };
+        img.onerror = tryNext;
+        img.src = url;
+      }
+      tryNext();
+    });
   }
 
   // === Attended (Yo estuve aquí) state ===
@@ -1191,10 +1252,12 @@
         +   '<h2>Gira finalizada</h2>'
         +   '<p>Hasta la próxima.</p>'
         + '</div>';
+      updateHeroAlt(null);
       return;
     }
 
     if (heroInfo) heroInfo.style.display = '';
+    updateHeroAlt(state.concert);
     const concert = state.concert;
     const isCustom = state.isCustom;
     const isLive = state.isLive;
@@ -1315,6 +1378,50 @@
     tick();
   });
 
+  // === Hero photo cross-fade (band photo ↔ venue photo for current concert) ===
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let heroAltUrl = null;
+  let heroFadeTimer = null;
+  let heroShowingAlt = false;
+  function stopHeroRotation() {
+    if (heroFadeTimer) { clearInterval(heroFadeTimer); heroFadeTimer = null; }
+    heroShowingAlt = false;
+    const heroEl = document.getElementById('hero');
+    if (heroEl) heroEl.classList.remove('show-alt');
+  }
+  function startHeroRotation() {
+    stopHeroRotation();
+    if (reduceMotion || !heroAltUrl) return;
+    heroFadeTimer = setInterval(function () {
+      heroShowingAlt = !heroShowingAlt;
+      document.getElementById('hero').classList.toggle('show-alt', heroShowingAlt);
+    }, 7000);
+  }
+  function updateHeroAlt(concert) {
+    if (!concert) { heroAltUrl = null; stopHeroRotation();
+      const altEl = document.getElementById('hero-alt');
+      if (altEl) altEl.style.backgroundImage = '';
+      return;
+    }
+    const slug = slugify(concert.city);
+    loadVenuePhoto(slug).then(function (url) {
+      const altEl = document.getElementById('hero-alt');
+      if (!altEl) return;
+      if (!url) {
+        if (heroAltUrl) {
+          heroAltUrl = null;
+          altEl.style.backgroundImage = '';
+          stopHeroRotation();
+        }
+        return;
+      }
+      if (url === heroAltUrl) return;
+      heroAltUrl = url;
+      altEl.style.backgroundImage = "url('" + url + "')";
+      startHeroRotation();
+    });
+  }
+
   // === Past-event panel ===
   let panelDate = null;
   const panelEl       = document.getElementById('event-panel');
@@ -1387,6 +1494,16 @@
     panelEl.classList.add('show');
     panelEl.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+
+    // Try to load the venue photo as a header banner
+    const photoEl = document.getElementById('event-panel-photo');
+    photoEl.classList.remove('show');
+    photoEl.style.backgroundImage = '';
+    loadVenuePhoto(slugify(c.city)).then(function (url) {
+      if (panelDate !== date || !url) return; // user closed/changed
+      photoEl.style.backgroundImage = "url('" + url + "')";
+      photoEl.classList.add('show');
+    });
   }
 
   function closePanel() {

@@ -2,3 +2,7 @@
 .DS_Store
 *.log
 node_modules/
+
+# Heavy source images — only the optimized .jpg version gets committed
+assets/*.png
+!assets/rotulo.png
