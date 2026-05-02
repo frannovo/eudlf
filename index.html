@@ -362,11 +362,16 @@
     margin-top: 8px;
   }
 
-  .audio-toggle {
+  .floating-controls {
     position: fixed;
     right: 16px;
     bottom: max(16px, env(safe-area-inset-bottom));
     z-index: 100;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .floating-btn {
     background: rgba(0, 0, 0, 0.85);
     color: var(--gold);
     border: 1px solid var(--gold);
@@ -380,23 +385,26 @@
     font-family: inherit;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 7px;
     transition: background 0.2s, color 0.2s, transform 0.15s;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    text-decoration: none;
   }
-  .audio-toggle:hover {
+  .floating-btn:hover {
     background: var(--gold);
     color: #000;
   }
-  .audio-toggle:active {
+  .floating-btn:active {
     transform: scale(0.96);
   }
-  .audio-toggle .icon {
+  .floating-btn .icon {
     font-size: 11px;
     line-height: 1;
   }
+  /* Backwards-compat: existing JS targets .audio-toggle by ID */
+  .audio-toggle { /* visual styles inherited via .floating-btn */ }
   /* === Answer banner (call-and-response) === */
   .answer-banner {
     position: fixed;
@@ -847,10 +855,16 @@
   <div class="answer-dismiss">Toca para cerrar</div>
 </div>
 
-<button type="button" class="audio-toggle" id="audio-toggle" aria-label="Reproducir ¿Cuánto queda, José Francisco?">
-  <span class="icon" id="audio-icon">▶</span>
-  <span id="audio-label">¿Cuánto queda?</span>
-</button>
+<div class="floating-controls">
+  <a class="floating-btn" href="https://elultimodelafila.com/noticias/" target="_blank" rel="noopener" aria-label="Noticias en la web oficial">
+    <span class="icon">📰</span>
+    <span>Noticias</span>
+  </a>
+  <button type="button" class="floating-btn audio-toggle" id="audio-toggle" aria-label="Reproducir ¿Cuánto queda, José Francisco?">
+    <span class="icon" id="audio-icon">▶</span>
+    <span id="audio-label">¿Cuánto queda?</span>
+  </button>
+</div>
 <audio id="audio-clip" src="assets/cuanto-queda.mp3" preload="auto" aria-hidden="true"></audio>
 
 <footer class="footer">
@@ -1121,12 +1135,28 @@
     return null;
   }
 
-  function distanceOf(ms) {
-    if (ms > WEEK_MS) return 'far';
-    if (ms > TOMORROW_MS) return 'week';
-    if (ms > SOON_MS) return 'tomorrow';
-    if (ms > 0) return 'soon';
-    return 'now';
+  function distanceOf(target, now) {
+    const ms = target - now;
+    if (ms <= 0) return 'now';
+    if (ms <= SOON_MS) return 'soon';
+
+    // Approx Madrid local day (UTC + 2h for CEST, where all concerts fall)
+    const tDate = new Date(target + 7200000);
+    const nDate = new Date(now + 7200000);
+
+    const isSameDay = tDate.getUTCDate() === nDate.getUTCDate() &&
+                      tDate.getUTCMonth() === nDate.getUTCMonth();
+
+    if (isSameDay) return 'today';
+
+    nDate.setUTCDate(nDate.getUTCDate() + 1);
+    const isTomorrow = tDate.getUTCDate() === nDate.getUTCDate() &&
+                       tDate.getUTCMonth() === nDate.getUTCMonth();
+
+    if (isTomorrow) return 'tomorrow';
+
+    if (ms <= WEEK_MS) return 'week';
+    return 'far';
   }
 
   function labelFor(distance, isCustom) {
@@ -1134,12 +1164,14 @@
       return isCustom ? 'Tu concierto, ahora en' : 'En directo desde';
     }
     if (isCustom) {
+      if (distance === 'today')    return '¡Tu concierto es hoy!';
       if (distance === 'tomorrow') return '¡Tu concierto es mañana!';
       if (distance === 'soon')     return '¡Tu concierto empieza pronto!';
       return 'Tu concierto en';
     }
     switch (distance) {
       case 'week':     return 'Esta semana en';
+      case 'today':    return '¡Es hoy!';
       case 'tomorrow': return '¡Es mañana!';
       case 'soon':     return '¡Empieza pronto!';
       default:         return 'Próximo concierto en';
@@ -1165,7 +1197,7 @@
     const clock = document.getElementById('clock');
     const hLbl = document.getElementById('h-lbl');
 
-    clock.classList.toggle('pulse-tomorrow', distance === 'tomorrow');
+    clock.classList.toggle('pulse-tomorrow', distance === 'tomorrow' || distance === 'today');
     clock.classList.toggle('pulse-soon',     distance === 'soon');
 
     if (totalHours < 48) {
@@ -1261,7 +1293,7 @@
     const concert = state.concert;
     const isCustom = state.isCustom;
     const isLive = state.isLive;
-    const distance = isLive ? 'now' : distanceOf(concert.ts - now);
+    const distance = isLive ? 'now' : distanceOf(concert.ts, now);
 
     document.getElementById('cd-label').textContent = labelFor(distance, isCustom);
     document.getElementById('next-toggle').classList.toggle('hidden', !isCustom);
@@ -1299,7 +1331,7 @@
     const state = currentTarget(now);
     let key;
     if (state) {
-      const distance = state.isLive ? 'now' : distanceOf(state.concert.ts - now);
+      const distance = state.isLive ? 'now' : distanceOf(state.concert.ts, now);
       const recap = !state.isLive ? findRecentlyEnded(now) : null;
       key = state.concert.ts + '|' + state.isCustom + '|' + state.isLive + '|' + distance
           + '|' + (pastSelectionNotice || '') + '|' + (recap ? recap.date : '');
@@ -1313,7 +1345,7 @@
     }
     if (state) {
       if (state.isLive) renderLiveBanner(state.concert, now);
-      else renderClock(state.concert.ts, now, distanceOf(state.concert.ts - now));
+      else renderClock(state.concert.ts, now, distanceOf(state.concert.ts, now));
     }
   }
 
