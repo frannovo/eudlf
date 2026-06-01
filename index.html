@@ -939,6 +939,26 @@
 
   // === Past events: curated articles per concert date ===
   const PAST_EVENTS = {
+    '2026-05-30': {
+      articles: [
+        { titulo: 'El Último de la Fila, un éxito nostálgico resumido en cinco canciones',
+          fecha: '2026-05-29',
+          link: 'https://www.deia.eus/cultura/2026/05/29/ultimo-fila-exito-nostalgico-resumido-cinco-canciones-11134364.html',
+          sumario: 'Previa local del medio vasco que repasa la trayectoria de la banda en cinco canciones clave antes del desembarco en el Bizkaia Arena, con las entradas del 30 de mayo y del 5 de junio ya agotadas.' },
+        { titulo: 'El Último de la Fila deleita al público vizcaíno 30 años después de su última actuación derrochando carisma y sonido',
+          fecha: '2026-05-31',
+          link: 'https://www.ultimahora.es/noticias/cultura/2026/05/31/2640671/ultimo-fila-deleita-publico-vizcaino-anos-despues-ultima-actuacion-derrochando-carisma-sonido.html',
+          sumario: 'Crónica de Europa Press que destaca casi dos horas y media de actuación con Ruper Ordorika como invitado sorpresa interpretando "Martin Larralde", treinta años después de la última visita del grupo a Bizkaia.' },
+        { titulo: 'Más de 15.000 personas acompañan a El Último de la Fila en una noche histórica en Barakaldo',
+          fecha: '2026-05-31',
+          link: 'https://tele7.tv/mas-de-15-000-personas-acompanan-a-el-ultimo-de-la-fila-en-una-noche-historica-en-barakaldo/',
+          sumario: 'Cobertura de la televisión local con el foco en la cifra de asistencia y la participación de Ruper Ordorika, situando la primera noche del BEC en el contexto del reencuentro histórico tras tres décadas.' },
+        { titulo: 'Miles de personas vibran en el BEC con El Último de la Fila',
+          fecha: '2026-05-31',
+          link: 'https://orain.eus/es/cultura/musica/2026/05/31/miles-personas-vibran-en-el-bec-el-ultimo-la-fila/',
+          sumario: 'Crónica del medio vasco que subraya el carácter emocional y nostálgico del concierto, con un repaso al extenso repertorio de temas icónicos coreado por el público del Bizkaia Arena.' }
+      ]
+    },
     '2026-05-23': {
       articles: [
         { titulo: 'El Último de la Fila desata una "insurrección" emocional a su paso por Madrid',
@@ -1099,7 +1119,11 @@
     'infobae.com':        'Infobae',
     'muzikalia.com':      'Muzikalia',
     'cadena100.es':       'Cadena 100',
-    'eldebate.com':       'El Debate'
+    'eldebate.com':       'El Debate',
+    'deia.eus':           'Deia',
+    'ultimahora.es':      'Última Hora',
+    'tele7.tv':           'Tele7',
+    'orain.eus':          'Orain'
   };
   function sourceLabel(url) {
     try {
