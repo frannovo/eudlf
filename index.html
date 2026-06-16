@@ -939,6 +939,26 @@
 
   // === Past events: curated articles per concert date ===
   const PAST_EVENTS = {
+    '2026-06-13': {
+      articles: [
+        { titulo: 'Crónica y fotografías de El Último de la Fila en Santiago de Compostela 2026',
+          fecha: '2026-06-13',
+          link: 'https://galiciaenconcierto.com/cronicas/cronica-y-fotografias-de-el-ultimo-de-la-fila-en-santiago-de-compostela-2026/',
+          sumario: 'Crónica especializada con galería fotográfica del concierto en Monte do Gozo, donde miles de seguidores subieron a la explanada bajo un calor sofocante que derivó en chaparrón antes de la salida al escenario de Manolo García y Quimi Portet.' },
+        { titulo: '"Si vivimos en el presente, el tiempo no pasa", lección de El Último de la Fila en Galicia',
+          fecha: '2026-06-14',
+          link: 'https://www.infobae.com/espana/agencias/2026/06/14/si-vivimos-en-el-presente-el-tiempo-no-pasa-leccion-de-el-ultimo-de-la-fila-en-galicia/',
+          sumario: 'Crónica de Ana Martínez (EFE) que recoge casi tres horas de concierto con la reflexión inicial de Manolo García y un repaso a los temas de los noventa con guiños al cuidado de la tierra, la pesca y el paisaje gallego.' },
+        { titulo: 'El Último de la Fila hizo historia en Santiago con una de las citas musicales más esperadas del año',
+          fecha: '2026-06-14',
+          link: 'https://www.elcorreogallego.es/fotos/santiago/2026/06/14/ultimo-fila-hizo-historia-santiago-131378864.html',
+          sumario: 'Reportaje gráfico firmado por Jesús Prieto que retrata una de las citas más esperadas del año en Santiago, con el reencuentro de Manolo García y Quimi Portet ante miles de seguidores tras tres décadas de ausencia.' },
+        { titulo: 'El Último de la Fila reunió en Santiago a 4.700 personas menos que las que habían comprado entrada para Riazor',
+          fecha: '2026-06-14',
+          link: 'https://www.elidealgallego.com/a-coruna/2026-06-14/el-ultimo-de-la-fila-reunio-en-santiago-a-4-700-personas-menos-que-las-que-habian-comprado-entrada-para-riazor-862074.html',
+          sumario: 'Crónica de Víctor Seoane desde A Coruña centrada en el coste del traslado a Monte do Gozo: 19.300 asistentes frente a las 24.000 entradas vendidas para Riazor, con la actuación calificada de magnífica pese al cambio de recinto.' }
+      ]
+    },
     '2026-06-05': {
       articles: [
         { titulo: "El Último de la Fila: 'dulce sueño' cumplido",
@@ -1135,7 +1155,10 @@
     'deia.eus':           'Deia',
     'ultimahora.es':      'Última Hora',
     'tele7.tv':           'Tele7',
-    'orain.eus':          'Orain'
+    'orain.eus':          'Orain',
+    'galiciaenconcierto.com': 'Galicia en Concierto',
+    'elcorreogallego.es': 'El Correo Gallego',
+    'elidealgallego.com': 'El Ideal Gallego'
   };
   function sourceLabel(url) {
     try {
