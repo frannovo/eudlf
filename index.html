@@ -939,6 +939,18 @@
 
   // === Past events: curated articles per concert date ===
   const PAST_EVENTS = {
+    '2026-06-27': {
+      articles: [
+        { titulo: 'El Último de la Fila, insurrección multitudinaria con un guiño final a México',
+          fecha: '2026-06-28',
+          link: 'https://www.andaluciainformacion.es/articulo/sevilla/ultimo-fila-insurreccion-multitudinaria-guino-final-mexico/202606280911213415515.html',
+          sumario: 'Crónica de EFE desde un Estadio de La Cartuja abarrotado, la cita más multitudinaria de la gira, con "Insurrección" coreada bajo banderas andaluzas, la sorpresa del batería Ángel Celada cantando a capella la jota "A la cárcel de Pamplona" y un cierre con una versión propia de "El Rey" de José Alfredo Jiménez antes de "Mar antiguo".' },
+        { titulo: 'Paso al Último De La Fila, paso al ansia de vivir',
+          fecha: '2026-06-30',
+          link: 'https://davidsaavedra2.substack.com/p/paso-al-ultimo-de-la-fila-paso-al',
+          sumario: 'Crónica personal de David Saavedra sobre casi dos horas y media de repertorio ininterrumpido con toda la banda clásica, la incorporación de Pedro Javier González a la guitarra flamenca en "Aviones plateados" y una comparación favorable con el tramo final de la gira del 95 en el Coliseum de A Coruña.' }
+      ]
+    },
     '2026-06-20': {
       articles: [
         { titulo: 'El Último de la Fila convierte Avilés en una noche irrepetible ante 20.000 personas',
@@ -1172,7 +1184,9 @@
     'elcorreogallego.es': 'El Correo Gallego',
     'elidealgallego.com': 'El Ideal Gallego',
     'asturiasmundial.com': 'Asturias Mundial',
-    'rtpa.es':            'RTPA'
+    'rtpa.es':            'RTPA',
+    'andaluciainformacion.es':    'Andalucía Información',
+    'davidsaavedra2.substack.com': 'David Saavedra (Substack)'
   };
   function sourceLabel(url) {
     try {
